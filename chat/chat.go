@@ -22,6 +22,18 @@ type Server struct {
 	createGroup chan net.Conn
 	addGroup    chan net.Conn
 	exitGroup   chan net.Conn
+
+	// this will store the group name with connected clients
+
+	groups map[string][]net.Conn
+
+	//This will store the total number of groups
+
+	groupCount int
+
+	// This map will store the every client to which group it belongs
+
+	groupName map[net.Conn]string
 }
 
 type Message struct {
@@ -46,6 +58,9 @@ func NewServer(port string) *Server {
 		createGroup:  make(chan net.Conn),
 		addGroup:     make(chan net.Conn),
 		exitGroup:    make(chan net.Conn),
+		groups:       make(map[string][]net.Conn, 0),
+		groupCount:   1,
+		groupName:    make(map[net.Conn]string, 0),
 	}
 	return s
 }
@@ -79,6 +94,8 @@ func (s *Server) startChannels() {
 		case deadClient := <-s.removeClient:
 			s.removeConn(deadClient)
 			fmt.Println("Total connected clients are ", len(s.connections))
+		case add := <-s.addGroup:
+			go s.createGroups(add)
 		}
 	}
 }
@@ -108,6 +125,7 @@ func (s *Server) handleRequest(conn net.Conn) {
 		if str[0] == '1' {
 
 			fmt.Println("Create group command")
+			s.addGroup <- conn
 
 		} else if str[0] == '2' {
 			fmt.Println("Add group command")
