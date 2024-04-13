@@ -5,7 +5,10 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 )
+
+var Str string
 
 type Server struct {
 	listner      net.Listener
@@ -13,6 +16,12 @@ type Server struct {
 	messages     chan Message  // this channel will listen for message
 	addClient    chan net.Conn // this channel will add new client
 	removeClient chan net.Conn // this channel will listen for removing the connection
+
+	// Group related channels
+
+	createGroup chan net.Conn
+	addGroup    chan net.Conn
+	exitGroup   chan net.Conn
 }
 
 type Message struct {
@@ -34,6 +43,9 @@ func NewServer(port string) *Server {
 		messages:     make(chan Message),
 		addClient:    make(chan net.Conn),
 		removeClient: make(chan net.Conn),
+		createGroup:  make(chan net.Conn),
+		addGroup:     make(chan net.Conn),
+		exitGroup:    make(chan net.Conn),
 	}
 	return s
 }
@@ -48,7 +60,7 @@ func (s *Server) Start() {
 		}
 
 		s.addClient <- conn
-		conn.Write([]byte("Connection successfull"))
+		conn.Write([]byte(Str))
 
 		fmt.Println("Address is ", conn.RemoteAddr())
 		go s.handleRequest(conn)
@@ -88,12 +100,28 @@ func (s *Server) handleRequest(conn net.Conn) {
 			}
 			log.Fatal("Error in HandleRequest is ", err)
 		}
-		m := Message{
-			conn:    conn,
-			message: message,
+		str := string(message)
+		str = strings.TrimSpace(str)
+
+		// fmt.Println(len(str))
+
+		if str[0] == '1' {
+
+			fmt.Println("Create group command")
+
+		} else if str[0] == '2' {
+			fmt.Println("Add group command")
+		} else if str[0] == '3' {
+			fmt.Println("Exit group command")
+		} else {
+			m := Message{
+				conn:    conn,
+				message: message,
+			}
+			s.messages <- m
 		}
-		s.messages <- m
 	}
+
 }
 
 // this function will send message to all clients

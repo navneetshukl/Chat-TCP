@@ -123,7 +123,15 @@
 
 package main
 
-import "github.com/chat/chat"
+import (
+	"fmt"
+
+	"github.com/chat/chat"
+)
+
+func init() {
+	chat.Str = fmt.Sprintf("Connection successfull.\nPress %d to create new group.\nPress %d to add to group.\nPress %d to remove from group. ",1,2,3)
+}
 
 func main() {
 	server := chat.NewServer(":8080")
